@@ -1,0 +1,328 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Cybercab Central — Fleet Investor ROI Sandbox</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<script src="https://cdn.tailwindcss.com"></script>
+<script>
+  tailwind.config = {
+    theme: { extend: {
+      colors: { void:'#07090E', panel:'#0F141C', gold:'#D4AF37', goldsoft:'#F3E5AB',
+        crimson:'#E82127', silver:'#CBD5E1', cyan:'#00E5FF', cyblue:'#0284C7' },
+      fontFamily: { display:['Space Grotesk','sans-serif'], body:['Inter','sans-serif'] }
+    }}
+  }
+</script>
+<link rel="stylesheet" href="css/style.css">
+<style>
+  input[type=range]{-webkit-appearance:none; width:100%; height:4px; border-radius:2px; background:#232733; outline:none;}
+  input[type=range]::-webkit-slider-thumb{-webkit-appearance:none; width:18px; height:18px; border-radius:50%; background:linear-gradient(150deg,#F3E5AB,#D4AF37); box-shadow:0 0 10px rgba(212,175,55,0.7); cursor:pointer; margin-top:-7px;}
+  input[type=range]::-moz-range-thumb{width:18px; height:18px; border-radius:50%; background:linear-gradient(150deg,#F3E5AB,#D4AF37); border:none; box-shadow:0 0 10px rgba(212,175,55,0.7); cursor:pointer;}
+  .ripple{position:relative; overflow:hidden;}
+  .ripple-circle{position:absolute; border-radius:50%; background:rgba(255,255,255,0.5); transform:scale(0); animation:ripple-anim 0.6s ease-out; pointer-events:none;}
+  @keyframes ripple-anim{ to{ transform:scale(3); opacity:0; } }
+  .toggle{width:44px; height:24px; border-radius:999px; background:#232733; position:relative; transition:background 0.25s ease; cursor:pointer;}
+  .toggle.on{background:linear-gradient(120deg,#F3E5AB,#D4AF37);}
+  .toggle-dot{position:absolute; top:3px; left:3px; width:18px; height:18px; border-radius:50%; background:#e5e7eb; transition:transform 0.25s cubic-bezier(0.16,1,0.3,1);}
+  .toggle.on .toggle-dot{transform:translateX(20px); background:#1a1204;}
+</style>
+</head>
+<body class="bg-void text-slate-100 font-body">
+<div class="bg-mesh"></div>
+
+<header class="sticky top-0 z-50 glass border-b border-[rgba(212,175,55,0.15)]">
+  <div class="max-w-7xl mx-auto px-6 lg:px-10 h-20 flex items-center justify-between">
+    <a href="index.html" class="flex items-center gap-3">
+      <div class="w-10 h-10 rounded-xl bg-gradient-to-br from-goldsoft via-gold to-[#9c6f21] flex items-center justify-center shadow-[0_0_0_1px_rgba(212,175,55,0.35),0_6px_18px_-6px_rgba(212,175,55,0.55)]">
+        <svg viewBox="0 0 24 24" fill="none" class="w-5 h-5"><path d="M4 15l2.4-6.2A3 3 0 0 1 9.2 7h5.6a3 3 0 0 1 2.8 1.8L20 15" stroke="#1a1204" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"/><path d="M2.5 15h19v2.2a1.6 1.6 0 0 1-1.6 1.6H4.1a1.6 1.6 0 0 1-1.6-1.6V15z" stroke="#1a1204" stroke-width="1.8" stroke-linejoin="round"/><circle cx="7" cy="18.8" r="1.4" fill="#1a1204"/><circle cx="17" cy="18.8" r="1.4" fill="#1a1204"/></svg>
+      </div>
+      <div class="leading-tight">
+        <div class="font-display font-bold text-base tracking-wide">CYBERCAB</div>
+        <div class="text-[9.5px] text-slate-400 tracking-[0.2em] font-semibold">CENTRAL</div>
+      </div>
+    </a>
+    <nav class="hidden lg:flex items-center gap-8 relative">
+      <a href="index.html" data-nav="index" class="text-sm font-medium text-slate-300 hover:text-white transition-colors py-2">Command Deck</a>
+      <a href="dispatch-comparison.html" data-nav="dispatch-comparison" class="text-sm font-medium text-slate-300 hover:text-white transition-colors py-2">Dispatch Sim</a>
+      <a href="fleet-calculator.html" data-nav="fleet-calculator" class="text-sm font-medium text-slate-300 hover:text-white transition-colors py-2">Fleet ROI</a>
+      <a href="infrastructure.html" data-nav="infrastructure" class="text-sm font-medium text-slate-300 hover:text-white transition-colors py-2">Infrastructure</a>
+      <a href="verify.html" data-nav="verify" class="text-sm font-medium text-slate-300 hover:text-white transition-colors py-2">Verify</a>
+      <a href="community.html" data-nav="community" class="text-sm font-medium text-slate-300 hover:text-white transition-colors py-2">Community</a>
+      <div id="navIndicator"></div>
+    </nav>
+    <div class="flex items-center gap-3">
+      <button id="teslaLinkBtn" class="btn-magnetic hidden sm:inline-flex items-center gap-2 px-4 py-2.5 rounded-lg text-sm font-semibold border border-[rgba(212,175,55,0.35)] text-slate-100">
+        <svg class="w-4 h-4" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8"><path d="M12 2l8 4v6c0 5-3.5 8.5-8 10-4.5-1.5-8-5-8-10V6l8-4z"/></svg>
+        Link Tesla Account
+      </button>
+      <button id="openSightingDrawer" class="btn-magnetic inline-flex items-center gap-2 px-4 py-2.5 rounded-lg text-sm font-bold bg-gradient-to-r from-goldsoft to-gold text-[#1a1204] shadow-[0_8px_20px_-8px_rgba(212,175,55,0.65)]">Submit Sighting</button>
+    </div>
+  </div>
+</header>
+
+<section class="py-16">
+  <div class="max-w-7xl mx-auto px-6 lg:px-10">
+    <div class="reveal-on-scroll mb-10 max-w-2xl">
+      <h1 class="font-display font-bold text-4xl lg:text-5xl tracking-tight">Fleet Investor<br><span class="text-gold">ROI Sandbox</span></h1>
+      <p class="mt-4 text-slate-400 text-base leading-relaxed">Model monthly economics for a prospective Cybercab fleet — energy overhead, gross revenue, net operating income, and breakeven timeline.</p>
+    </div>
+
+    <div class="grid grid-cols-1 lg:grid-cols-3 gap-6">
+      <!-- Inputs -->
+      <div class="glass rounded-2xl p-7 space-y-7 reveal-on-scroll h-fit">
+        <div>
+          <div class="flex items-center justify-between mb-2">
+            <label class="text-xs font-semibold text-slate-400 uppercase tracking-wider">Fleet Size</label>
+            <span id="fleetSizeLabel" class="font-display font-bold text-gold text-lg">20</span>
+          </div>
+          <input type="range" id="fleetSize" min="1" max="100" value="20">
+        </div>
+        <div>
+          <div class="flex items-center justify-between mb-2">
+            <label class="text-xs font-semibold text-slate-400 uppercase tracking-wider">Electricity Rate</label>
+            <span id="electricityLabel" class="font-display font-bold text-cyan text-lg">$0.14/kWh</span>
+          </div>
+          <input type="range" id="electricityRate" min="0.06" max="0.40" step="0.01" value="0.14">
+        </div>
+        <div>
+          <div class="flex items-center justify-between mb-2">
+            <label class="text-xs font-semibold text-slate-400 uppercase tracking-wider">Daily Miles / Cab</label>
+            <span id="milesLabel" class="font-display font-bold text-silver text-lg">180 mi</span>
+          </div>
+          <input type="range" id="dailyMiles" min="50" max="400" step="10" value="180">
+        </div>
+        <div>
+          <div class="flex items-center justify-between mb-2">
+            <label class="text-xs font-semibold text-slate-400 uppercase tracking-wider">Passenger Fare</label>
+            <span id="fareLabel" class="font-display font-bold text-gold text-lg">$1.20/mi</span>
+          </div>
+          <input type="range" id="fare" min="0.60" max="2.50" step="0.05" value="1.20">
+        </div>
+        <div>
+          <div class="flex items-center justify-between mb-2">
+            <label class="text-xs font-semibold text-slate-400 uppercase tracking-wider">Tesla Network Cut</label>
+            <span id="cutLabel" class="font-display font-bold text-crimson text-lg">20%</span>
+          </div>
+          <input type="range" id="networkCut" min="10" max="30" value="20">
+        </div>
+        <div>
+          <div class="flex items-center justify-between mb-2">
+            <label class="text-xs font-semibold text-slate-400 uppercase tracking-wider">Cost per Cybercab</label>
+            <span id="costLabel" class="font-display font-bold text-cyan text-lg">$35,000</span>
+          </div>
+          <input type="range" id="costPerCab" min="20000" max="60000" step="1000" value="35000">
+        </div>
+        <div class="flex items-center justify-between pt-2">
+          <label class="text-xs font-semibold text-slate-400 uppercase tracking-wider">Inductive Loss Factor <span id="lossLabel" class="text-slate-300">(8%)</span></label>
+          <div id="lossToggle" class="toggle on"><div class="toggle-dot"></div></div>
+        </div>
+      </div>
+
+      <!-- Outputs -->
+      <div class="lg:col-span-2 space-y-6">
+        <div class="grid grid-cols-1 sm:grid-cols-3 gap-6">
+          <div class="glass rounded-2xl p-6 reveal-on-scroll">
+            <div class="text-xs uppercase tracking-wider text-cyan font-semibold mb-2">Monthly Energy Overhead</div>
+            <div class="font-display font-black text-2xl">$<span id="energyOut">0</span></div>
+          </div>
+          <div class="glass rounded-2xl p-6 reveal-on-scroll">
+            <div class="text-xs uppercase tracking-wider text-gold font-semibold mb-2">Gross Fleet Revenue</div>
+            <div class="font-display font-black text-2xl">$<span id="revenueOut">0</span></div>
+          </div>
+          <div class="glass rounded-2xl p-6 reveal-on-scroll">
+            <div class="text-xs uppercase tracking-wider text-silver font-semibold mb-2">Net Operating Income</div>
+            <div class="font-display font-black text-2xl">$<span id="noiOut">0</span></div>
+          </div>
+        </div>
+
+        <div class="glass rounded-2xl p-7 reveal-on-scroll">
+          <div class="flex items-center justify-between mb-4">
+            <div class="text-xs uppercase tracking-wider text-slate-400 font-semibold">Breakeven Timeline</div>
+            <span id="breakevenLabel" class="font-display font-bold text-gold">— mo</span>
+          </div>
+          <div class="h-4 w-full rounded-full overflow-hidden bg-[#161b26]">
+            <div id="breakevenBar" class="h-full bg-gradient-to-r from-goldsoft via-gold to-cyan transition-all duration-700 ease-out" style="width:0%; box-shadow:0 0 16px rgba(212,175,55,0.6);"></div>
+          </div>
+          <div class="text-xs text-slate-500 mt-2">Meter reference: 24-month full-capital recovery window</div>
+        </div>
+
+        <button id="exportBtn" class="ripple btn-magnetic w-full py-4 rounded-xl text-sm font-bold bg-gradient-to-r from-goldsoft to-gold text-[#1a1204]">Export Investment Prospectus</button>
+      </div>
+    </div>
+  </div>
+</section>
+
+<div id="sightingBackdrop" class="drawer-backdrop fixed inset-0 z-[100] bg-black/60 backdrop-blur-sm"></div>
+<div id="sightingDrawer" class="drawer fixed top-0 right-0 z-[110] h-full w-full max-w-md glass-strong p-8 overflow-y-auto">
+  <div class="flex items-center justify-between mb-6">
+    <h3 class="font-display font-bold text-xl">Submit a Sighting</h3>
+    <button id="closeSightingDrawer" class="text-slate-400 hover:text-white text-2xl leading-none">&times;</button>
+  </div>
+  <form id="sightingForm" class="space-y-5">
+    <div>
+      <label class="text-xs font-semibold text-slate-400 uppercase tracking-wider">Vehicle Type</label>
+      <select id="sightingType" class="mt-2 w-full bg-panel border border-[rgba(212,175,55,0.25)] rounded-lg px-3 py-2.5 text-sm">
+        <option>Unsupervised</option>
+        <option>Employee Test</option>
+      </select>
+    </div>
+    <div>
+      <label class="text-xs font-semibold text-slate-400 uppercase tracking-wider">Location</label>
+      <input id="sightingLoc" required placeholder="e.g. S Congress Ave, Austin, TX" class="mt-2 w-full bg-panel border border-[rgba(212,175,55,0.25)] rounded-lg px-3 py-2.5 text-sm placeholder:text-slate-600">
+    </div>
+    <div>
+      <label class="text-xs font-semibold text-slate-400 uppercase tracking-wider">Vehicle ID (optional)</label>
+      <input id="sightingVehicle" placeholder="e.g. CC-0412" class="mt-2 w-full bg-panel border border-[rgba(212,175,55,0.25)] rounded-lg px-3 py-2.5 text-sm placeholder:text-slate-600">
+    </div>
+    <button type="submit" class="btn-magnetic w-full py-3.5 rounded-lg text-sm font-bold bg-gradient-to-r from-goldsoft to-gold text-[#1a1204]">Log Sighting</button>
+  </form>
+</div>
+
+<div id="teslaLinkModal" class="modal-backdrop fixed inset-0 z-[150] bg-black/70 backdrop-blur-sm flex items-center justify-center p-4">
+  <div class="modal-panel glass-strong rounded-2xl max-w-md w-full p-8">
+    <div class="w-12 h-12 rounded-xl bg-gradient-to-br from-goldsoft to-gold flex items-center justify-center mb-5">
+      <svg class="w-6 h-6 text-[#1a1204]" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8"><path d="M12 2l8 4v6c0 5-3.5 8.5-8 10-4.5-1.5-8-5-8-10V6l8-4z"/></svg>
+    </div>
+    <h3 class="font-display font-bold text-xl mb-2">Link Tesla Account</h3>
+    <p class="text-sm text-slate-400 leading-relaxed mb-6">This verifies your owner status locally, in your browser only. Cybercab Central never contacts Tesla's servers or stores credentials — it simply marks your account as a Verified Fleet Scout on this device.</p>
+    <div class="flex gap-3">
+      <button id="teslaLinkCancel" class="flex-1 py-3 rounded-lg text-sm font-semibold border border-slate-600 text-slate-300">Cancel</button>
+      <button id="teslaLinkConfirm" class="btn-magnetic flex-1 py-3 rounded-lg text-sm font-bold bg-gradient-to-r from-goldsoft to-gold text-[#1a1204]">Confirm & Link</button>
+    </div>
+  </div>
+</div>
+
+<footer class="border-t border-[rgba(212,175,55,0.12)] py-16">
+  <div class="max-w-7xl mx-auto px-6 lg:px-10 grid grid-cols-2 lg:grid-cols-5 gap-10 mb-12">
+    <div class="col-span-2">
+      <div class="flex items-center gap-3">
+        <div class="w-8 h-8 rounded-lg bg-gradient-to-br from-goldsoft to-gold flex items-center justify-center">
+          <svg viewBox="0 0 24 24" fill="none" class="w-4 h-4"><path d="M4 15l2.4-6.2A3 3 0 0 1 9.2 7h5.6a3 3 0 0 1 2.8 1.8L20 15" stroke="#1a1204" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"/><path d="M2.5 15h19v2.2a1.6 1.6 0 0 1-1.6 1.6H4.1a1.6 1.6 0 0 1-1.6-1.6V15z" stroke="#1a1204" stroke-width="1.8" stroke-linejoin="round"/></svg>
+        </div>
+        <span class="font-display font-bold">CYBERCAB CENTRAL</span>
+      </div>
+      <p class="text-sm text-slate-500 mt-3 max-w-xs">Crowdsourced tracking and analytics for Tesla's autonomous robotaxi fleet.</p>
+    </div>
+    <div>
+      <h4 class="text-xs font-semibold text-slate-400 uppercase tracking-wider mb-4">Explore</h4>
+      <div class="flex flex-col gap-2.5 text-sm text-slate-400">
+        <a href="index.html" class="hover:text-white transition-colors">Command Deck</a>
+        <a href="dispatch-comparison.html" class="hover:text-white transition-colors">Dispatch Sim</a>
+        <a href="fleet-calculator.html" class="hover:text-white transition-colors">Fleet ROI</a>
+      </div>
+    </div>
+    <div>
+      <h4 class="text-xs font-semibold text-slate-400 uppercase tracking-wider mb-4">Network</h4>
+      <div class="flex flex-col gap-2.5 text-sm text-slate-400">
+        <a href="infrastructure.html" class="hover:text-white transition-colors">Infrastructure</a>
+        <a href="verify.html" class="hover:text-white transition-colors">Verify</a>
+        <a href="community.html" class="hover:text-white transition-colors">Community</a>
+      </div>
+    </div>
+    <div>
+      <h4 class="text-xs font-semibold text-slate-400 uppercase tracking-wider mb-4">About</h4>
+      <div class="flex flex-col gap-2.5 text-sm text-slate-400">
+        <a href="#" class="hover:text-white transition-colors">How It Works</a>
+        <a href="#" class="hover:text-white transition-colors">Privacy</a>
+      </div>
+    </div>
+  </div>
+  <div class="max-w-7xl mx-auto px-6 lg:px-10 pt-8 border-t border-[rgba(212,175,55,0.1)] text-xs text-slate-500">© 2026 Cybercab Central. Not affiliated with Tesla, Inc. Data is crowdsourced and simulated.</div>
+</footer>
+
+<script src="js/calc.js"></script>
+<script src="js/main.js"></script>
+<script>
+  CCC.init();
+
+  const fleetSize = document.getElementById('fleetSize');
+  const electricityRate = document.getElementById('electricityRate');
+  const dailyMiles = document.getElementById('dailyMiles');
+  const fare = document.getElementById('fare');
+  const networkCut = document.getElementById('networkCut');
+  const costPerCab = document.getElementById('costPerCab');
+  const lossToggle = document.getElementById('lossToggle');
+  let lossOn = true;
+
+  let last = { energy: 0, revenue: 0, noi: 0 };
+
+  function fmt(n) { return Math.round(n).toLocaleString(); }
+
+  function recompute() {
+    document.getElementById('fleetSizeLabel').textContent = fleetSize.value;
+    document.getElementById('electricityLabel').textContent = '$' + parseFloat(electricityRate.value).toFixed(2) + '/kWh';
+    document.getElementById('milesLabel').textContent = dailyMiles.value + ' mi';
+    document.getElementById('fareLabel').textContent = '$' + parseFloat(fare.value).toFixed(2) + '/mi';
+    document.getElementById('cutLabel').textContent = networkCut.value + '%';
+    document.getElementById('costLabel').textContent = '$' + fmt(parseInt(costPerCab.value, 10));
+    document.getElementById('lossLabel').textContent = lossOn ? '(8%)' : '(0%)';
+
+    const r = CCC_CALC.fleetFinancials({
+      fleetSize: parseInt(fleetSize.value, 10),
+      electricityRate: parseFloat(electricityRate.value),
+      dailyMiles: parseInt(dailyMiles.value, 10),
+      fare: parseFloat(fare.value),
+      inductiveLossFactor: lossOn ? 0.08 : 0,
+      networkCutPct: parseInt(networkCut.value, 10),
+      costPerCab: parseInt(costPerCab.value, 10)
+    });
+
+    CCC.animateCounter(document.getElementById('energyOut'), last.energy, r.monthlyEnergyOverhead, 700, fmt);
+    CCC.animateCounter(document.getElementById('revenueOut'), last.revenue, r.grossRevenue, 700, fmt);
+    CCC.animateCounter(document.getElementById('noiOut'), last.noi, r.netOperatingIncome, 700, fmt);
+    last = { energy: r.monthlyEnergyOverhead, revenue: r.grossRevenue, noi: r.netOperatingIncome };
+
+    const months = r.breakevenMonths;
+    document.getElementById('breakevenLabel').textContent = isFinite(months) ? months + ' mo' : '—';
+    document.getElementById('breakevenBar').style.width = isFinite(months) ? Math.min(100, (24 / months) * 100) + '%' : '0%';
+  }
+
+  [fleetSize, electricityRate, dailyMiles, fare, networkCut, costPerCab].forEach(el => el.addEventListener('input', recompute));
+  lossToggle.addEventListener('click', () => { lossOn = !lossOn; lossToggle.classList.toggle('on', lossOn); recompute(); });
+
+  document.getElementById('exportBtn').addEventListener('click', (e) => {
+    const rect = e.target.getBoundingClientRect();
+    const circle = document.createElement('span');
+    circle.className = 'ripple-circle';
+    circle.style.left = (e.clientX - rect.left - 10) + 'px';
+    circle.style.top = (e.clientY - rect.top - 10) + 'px';
+    circle.style.width = circle.style.height = '20px';
+    e.target.appendChild(circle);
+    setTimeout(() => circle.remove(), 600);
+
+    const summary = `CYBERCAB CENTRAL — INVESTMENT PROSPECTUS
+Generated: ${new Date().toLocaleString()}
+
+Fleet Size: ${fleetSize.value} Cybercabs
+Electricity Rate: $${parseFloat(electricityRate.value).toFixed(2)}/kWh
+Daily Miles per Cab: ${dailyMiles.value} mi
+Passenger Fare: $${parseFloat(fare.value).toFixed(2)}/mi
+Tesla Network Cut: ${networkCut.value}%
+Cost per Cybercab: $${fmt(parseInt(costPerCab.value, 10))}
+Inductive Loss Factor: ${lossOn ? '8%' : '0%'}
+
+Monthly Energy Overhead: $${document.getElementById('energyOut').textContent}
+Gross Fleet Revenue: $${document.getElementById('revenueOut').textContent}
+Net Operating Income: $${document.getElementById('noiOut').textContent}
+Breakeven Timeline: ${document.getElementById('breakevenLabel').textContent}
+
+Not affiliated with Tesla, Inc. Figures are simulated estimates for planning purposes only.`;
+    const blob = new Blob([summary], { type: 'text/plain' });
+    const url = URL.createObjectURL(blob);
+    const a = document.createElement('a');
+    a.href = url;
+    a.download = 'cybercab-central-prospectus.txt';
+    document.body.appendChild(a);
+    a.click();
+    a.remove();
+    URL.revokeObjectURL(url);
+    CCC.toast('Prospectus exported.', 'success');
+  });
+
+  recompute();
+</script>
+</body>
+</html>

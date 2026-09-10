@@ -1,0 +1,313 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Cybercab Central — Depots & Inductive PadSpotter</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link rel="stylesheet" href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css" />
+<script src="https://cdn.tailwindcss.com"></script>
+<script>
+  tailwind.config = {
+    theme: { extend: {
+      colors: { void:'#07090E', panel:'#0F141C', gold:'#D4AF37', goldsoft:'#F3E5AB',
+        crimson:'#E82127', silver:'#CBD5E1', cyan:'#00E5FF', cyblue:'#0284C7' },
+      fontFamily: { display:['Space Grotesk','sans-serif'], body:['Inter','sans-serif'] }
+    }}
+  }
+</script>
+<link rel="stylesheet" href="css/style.css">
+</head>
+<body class="bg-void text-slate-100 font-body">
+<div class="bg-mesh"></div>
+
+<header class="sticky top-0 z-50 glass border-b border-[rgba(212,175,55,0.15)]">
+  <div class="max-w-7xl mx-auto px-6 lg:px-10 h-20 flex items-center justify-between">
+    <a href="index.html" class="flex items-center gap-3">
+      <div class="w-10 h-10 rounded-xl bg-gradient-to-br from-goldsoft via-gold to-[#9c6f21] flex items-center justify-center shadow-[0_0_0_1px_rgba(212,175,55,0.35),0_6px_18px_-6px_rgba(212,175,55,0.55)]">
+        <svg viewBox="0 0 24 24" fill="none" class="w-5 h-5"><path d="M4 15l2.4-6.2A3 3 0 0 1 9.2 7h5.6a3 3 0 0 1 2.8 1.8L20 15" stroke="#1a1204" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"/><path d="M2.5 15h19v2.2a1.6 1.6 0 0 1-1.6 1.6H4.1a1.6 1.6 0 0 1-1.6-1.6V15z" stroke="#1a1204" stroke-width="1.8" stroke-linejoin="round"/><circle cx="7" cy="18.8" r="1.4" fill="#1a1204"/><circle cx="17" cy="18.8" r="1.4" fill="#1a1204"/></svg>
+      </div>
+      <div class="leading-tight">
+        <div class="font-display font-bold text-base tracking-wide">CYBERCAB</div>
+        <div class="text-[9.5px] text-slate-400 tracking-[0.2em] font-semibold">CENTRAL</div>
+      </div>
+    </a>
+    <nav class="hidden lg:flex items-center gap-8 relative">
+      <a href="index.html" data-nav="index" class="text-sm font-medium text-slate-300 hover:text-white transition-colors py-2">Command Deck</a>
+      <a href="dispatch-comparison.html" data-nav="dispatch-comparison" class="text-sm font-medium text-slate-300 hover:text-white transition-colors py-2">Dispatch Sim</a>
+      <a href="fleet-calculator.html" data-nav="fleet-calculator" class="text-sm font-medium text-slate-300 hover:text-white transition-colors py-2">Fleet ROI</a>
+      <a href="infrastructure.html" data-nav="infrastructure" class="text-sm font-medium text-slate-300 hover:text-white transition-colors py-2">Infrastructure</a>
+      <a href="verify.html" data-nav="verify" class="text-sm font-medium text-slate-300 hover:text-white transition-colors py-2">Verify</a>
+      <a href="community.html" data-nav="community" class="text-sm font-medium text-slate-300 hover:text-white transition-colors py-2">Community</a>
+      <div id="navIndicator"></div>
+    </nav>
+    <div class="flex items-center gap-3">
+      <button id="teslaLinkBtn" class="btn-magnetic hidden sm:inline-flex items-center gap-2 px-4 py-2.5 rounded-lg text-sm font-semibold border border-[rgba(212,175,55,0.35)] text-slate-100">
+        <svg class="w-4 h-4" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8"><path d="M12 2l8 4v6c0 5-3.5 8.5-8 10-4.5-1.5-8-5-8-10V6l8-4z"/></svg>
+        Link Tesla Account
+      </button>
+      <button id="openSightingDrawer" class="btn-magnetic inline-flex items-center gap-2 px-4 py-2.5 rounded-lg text-sm font-bold bg-gradient-to-r from-goldsoft to-gold text-[#1a1204] shadow-[0_8px_20px_-8px_rgba(212,175,55,0.65)]">Submit Sighting</button>
+    </div>
+  </div>
+</header>
+
+<section class="py-16">
+  <div class="max-w-7xl mx-auto px-6 lg:px-10">
+    <div class="reveal-on-scroll mb-10 flex items-end justify-between flex-wrap gap-4">
+      <div class="max-w-2xl">
+        <h1 class="font-display font-bold text-4xl lg:text-5xl tracking-tight">Depots &amp; Inductive<br><span class="text-gold">PadSpotter</span></h1>
+        <p class="mt-4 text-slate-400 text-base leading-relaxed">Wireless charging infrastructure, yard capacity, and coverage gaps across the network.</p>
+      </div>
+      <button id="registerPadBtn" class="btn-magnetic px-5 py-3 rounded-lg text-sm font-bold bg-gradient-to-r from-goldsoft to-gold text-[#1a1204]">Register Inductive Pad</button>
+    </div>
+
+    <!-- Map -->
+    <div class="glass rounded-2xl p-6 reveal-on-scroll mb-10">
+      <div class="flex flex-wrap gap-5 mb-4 text-xs text-slate-400">
+        <span class="flex items-center gap-2"><span class="w-2.5 h-2.5 rounded-full" style="background:#3fbd6e;box-shadow:0 0 8px #3fbd6e"></span>Operational</span>
+        <span class="flex items-center gap-2"><span class="w-2.5 h-2.5 rounded-full" style="background:#f59e0b;box-shadow:0 0 8px #f59e0b"></span>Obstructed</span>
+        <span class="flex items-center gap-2"><span class="w-2.5 h-2.5 rounded-full" style="background:#0284C7;box-shadow:0 0 8px #0284C7"></span>Under Construction</span>
+        <span class="flex items-center gap-2"><span class="w-2.5 h-2.5 rounded-full bg-crimson/60"></span>Charging Dead-Zone</span>
+      </div>
+      <div id="infraMap" class="rounded-xl overflow-hidden" style="height:420px;"></div>
+    </div>
+
+    <div class="grid grid-cols-1 lg:grid-cols-2 gap-6">
+      <!-- Pad list -->
+      <div class="glass rounded-2xl p-6 reveal-on-scroll">
+        <h3 class="font-display font-bold text-lg mb-4">Inductive Ground Pads</h3>
+        <div id="padList" class="space-y-3"></div>
+      </div>
+
+      <!-- Depot radar -->
+      <div class="glass rounded-2xl p-6 reveal-on-scroll">
+        <h3 class="font-display font-bold text-lg mb-4">Depot &amp; Turnaround Radar</h3>
+        <div id="depotList" class="space-y-5"></div>
+      </div>
+    </div>
+  </div>
+</section>
+
+<!-- Register pad modal -->
+<div id="padModal" class="modal-backdrop fixed inset-0 z-[150] bg-black/70 backdrop-blur-sm flex items-center justify-center p-4">
+  <div class="modal-panel glass-strong rounded-2xl max-w-md w-full p-8">
+    <div class="flex items-center justify-between mb-5">
+      <h3 class="font-display font-bold text-xl">Register Inductive Pad</h3>
+      <button id="padModalClose" class="text-slate-400 hover:text-white text-2xl leading-none">&times;</button>
+    </div>
+    <form id="padForm" class="space-y-5">
+      <div>
+        <label class="text-xs font-semibold text-slate-400 uppercase tracking-wider">Location</label>
+        <input id="padLocation" required placeholder="e.g. Zilker Park Curb" class="mt-2 w-full bg-panel border border-[rgba(212,175,55,0.25)] rounded-lg px-3 py-2.5 text-sm placeholder:text-slate-600">
+      </div>
+      <div>
+        <label class="text-xs font-semibold text-slate-400 uppercase tracking-wider">Status</label>
+        <select id="padStatus" class="mt-2 w-full bg-panel border border-[rgba(212,175,55,0.25)] rounded-lg px-3 py-2.5 text-sm">
+          <option>Operational</option>
+          <option>Obstructed</option>
+          <option>Under Construction</option>
+        </select>
+      </div>
+      <div>
+        <label class="text-xs font-semibold text-slate-400 uppercase tracking-wider">Photo</label>
+        <input id="padPhoto" type="file" accept="image/*" class="mt-2 w-full text-xs text-slate-400 file:mr-3 file:py-2 file:px-3 file:rounded-lg file:border-0 file:bg-[rgba(212,175,55,0.15)] file:text-gold file:text-xs file:font-semibold">
+        <img id="padPhotoPreview" class="hidden mt-3 rounded-lg max-h-40 w-full object-cover border border-[rgba(212,175,55,0.2)]">
+      </div>
+      <button type="submit" class="btn-magnetic w-full py-3.5 rounded-lg text-sm font-bold bg-gradient-to-r from-goldsoft to-gold text-[#1a1204]">Register Pad</button>
+    </form>
+  </div>
+</div>
+
+<div id="sightingBackdrop" class="drawer-backdrop fixed inset-0 z-[100] bg-black/60 backdrop-blur-sm"></div>
+<div id="sightingDrawer" class="drawer fixed top-0 right-0 z-[110] h-full w-full max-w-md glass-strong p-8 overflow-y-auto">
+  <div class="flex items-center justify-between mb-6">
+    <h3 class="font-display font-bold text-xl">Submit a Sighting</h3>
+    <button id="closeSightingDrawer" class="text-slate-400 hover:text-white text-2xl leading-none">&times;</button>
+  </div>
+  <form id="sightingForm" class="space-y-5">
+    <div>
+      <label class="text-xs font-semibold text-slate-400 uppercase tracking-wider">Vehicle Type</label>
+      <select id="sightingType" class="mt-2 w-full bg-panel border border-[rgba(212,175,55,0.25)] rounded-lg px-3 py-2.5 text-sm">
+        <option>Unsupervised</option>
+        <option>Employee Test</option>
+      </select>
+    </div>
+    <div>
+      <label class="text-xs font-semibold text-slate-400 uppercase tracking-wider">Location</label>
+      <input id="sightingLoc" required placeholder="e.g. S Congress Ave, Austin, TX" class="mt-2 w-full bg-panel border border-[rgba(212,175,55,0.25)] rounded-lg px-3 py-2.5 text-sm placeholder:text-slate-600">
+    </div>
+    <div>
+      <label class="text-xs font-semibold text-slate-400 uppercase tracking-wider">Vehicle ID (optional)</label>
+      <input id="sightingVehicle" placeholder="e.g. CC-0412" class="mt-2 w-full bg-panel border border-[rgba(212,175,55,0.25)] rounded-lg px-3 py-2.5 text-sm placeholder:text-slate-600">
+    </div>
+    <button type="submit" class="btn-magnetic w-full py-3.5 rounded-lg text-sm font-bold bg-gradient-to-r from-goldsoft to-gold text-[#1a1204]">Log Sighting</button>
+  </form>
+</div>
+
+<div id="teslaLinkModal" class="modal-backdrop fixed inset-0 z-[150] bg-black/70 backdrop-blur-sm flex items-center justify-center p-4">
+  <div class="modal-panel glass-strong rounded-2xl max-w-md w-full p-8">
+    <div class="w-12 h-12 rounded-xl bg-gradient-to-br from-goldsoft to-gold flex items-center justify-center mb-5">
+      <svg class="w-6 h-6 text-[#1a1204]" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8"><path d="M12 2l8 4v6c0 5-3.5 8.5-8 10-4.5-1.5-8-5-8-10V6l8-4z"/></svg>
+    </div>
+    <h3 class="font-display font-bold text-xl mb-2">Link Tesla Account</h3>
+    <p class="text-sm text-slate-400 leading-relaxed mb-6">This verifies your owner status locally, in your browser only. Cybercab Central never contacts Tesla's servers or stores credentials — it simply marks your account as a Verified Fleet Scout on this device.</p>
+    <div class="flex gap-3">
+      <button id="teslaLinkCancel" class="flex-1 py-3 rounded-lg text-sm font-semibold border border-slate-600 text-slate-300">Cancel</button>
+      <button id="teslaLinkConfirm" class="btn-magnetic flex-1 py-3 rounded-lg text-sm font-bold bg-gradient-to-r from-goldsoft to-gold text-[#1a1204]">Confirm & Link</button>
+    </div>
+  </div>
+</div>
+
+<footer class="border-t border-[rgba(212,175,55,0.12)] py-16">
+  <div class="max-w-7xl mx-auto px-6 lg:px-10 grid grid-cols-2 lg:grid-cols-5 gap-10 mb-12">
+    <div class="col-span-2">
+      <div class="flex items-center gap-3">
+        <div class="w-8 h-8 rounded-lg bg-gradient-to-br from-goldsoft to-gold flex items-center justify-center">
+          <svg viewBox="0 0 24 24" fill="none" class="w-4 h-4"><path d="M4 15l2.4-6.2A3 3 0 0 1 9.2 7h5.6a3 3 0 0 1 2.8 1.8L20 15" stroke="#1a1204" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"/><path d="M2.5 15h19v2.2a1.6 1.6 0 0 1-1.6 1.6H4.1a1.6 1.6 0 0 1-1.6-1.6V15z" stroke="#1a1204" stroke-width="1.8" stroke-linejoin="round"/></svg>
+        </div>
+        <span class="font-display font-bold">CYBERCAB CENTRAL</span>
+      </div>
+      <p class="text-sm text-slate-500 mt-3 max-w-xs">Crowdsourced tracking and analytics for Tesla's autonomous robotaxi fleet.</p>
+    </div>
+    <div>
+      <h4 class="text-xs font-semibold text-slate-400 uppercase tracking-wider mb-4">Explore</h4>
+      <div class="flex flex-col gap-2.5 text-sm text-slate-400">
+        <a href="index.html" class="hover:text-white transition-colors">Command Deck</a>
+        <a href="dispatch-comparison.html" class="hover:text-white transition-colors">Dispatch Sim</a>
+        <a href="fleet-calculator.html" class="hover:text-white transition-colors">Fleet ROI</a>
+      </div>
+    </div>
+    <div>
+      <h4 class="text-xs font-semibold text-slate-400 uppercase tracking-wider mb-4">Network</h4>
+      <div class="flex flex-col gap-2.5 text-sm text-slate-400">
+        <a href="infrastructure.html" class="hover:text-white transition-colors">Infrastructure</a>
+        <a href="verify.html" class="hover:text-white transition-colors">Verify</a>
+        <a href="community.html" class="hover:text-white transition-colors">Community</a>
+      </div>
+    </div>
+    <div>
+      <h4 class="text-xs font-semibold text-slate-400 uppercase tracking-wider mb-4">About</h4>
+      <div class="flex flex-col gap-2.5 text-sm text-slate-400">
+        <a href="#" class="hover:text-white transition-colors">How It Works</a>
+        <a href="#" class="hover:text-white transition-colors">Privacy</a>
+      </div>
+    </div>
+  </div>
+  <div class="max-w-7xl mx-auto px-6 lg:px-10 pt-8 border-t border-[rgba(212,175,55,0.1)] text-xs text-slate-500">© 2026 Cybercab Central. Not affiliated with Tesla, Inc. Data is crowdsourced and simulated.</div>
+</footer>
+
+<script src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js"></script>
+<script src="js/calc.js"></script>
+<script src="js/main.js"></script>
+<script>
+  CCC.init();
+
+  const statusColor = { 'Operational': '#3fbd6e', 'Obstructed': '#f59e0b', 'Under Construction': '#0284C7' };
+  const statusPillClass = {
+    'Operational': 'bg-[rgba(63,189,110,0.15)] text-[#3fbd6e]',
+    'Obstructed': 'bg-[rgba(245,158,11,0.15)] text-[#f59e0b]',
+    'Under Construction': 'bg-[rgba(2,132,199,0.15)] text-cyblue'
+  };
+  const statusDotClass = {
+    'Operational': 'pulse-ring',
+    'Obstructed': 'pulse-ring',
+    'Under Construction': ''
+  };
+
+  const map = L.map('infraMap', { scrollWheelZoom: false }).setView([30.85, -97.2], 7);
+  L.tileLayer('https://{s}.basemaps.cartocdn.com/dark_all/{z}/{x}/{y}{r}.png', {
+    attribution: '&copy; OpenStreetMap &copy; CARTO', maxZoom: 19
+  }).addTo(map);
+
+  function pinIcon(color, size = 14) {
+    return L.divIcon({
+      className: '',
+      html: `<span class="marker-pulse" style="display:block;width:${size}px;height:${size}px;border-radius:50%;background:${color};box-shadow:0 0 10px ${color};color:${color};"></span>`,
+      iconSize: [size, size], iconAnchor: [size/2, size/2]
+    });
+  }
+
+  function renderPads() {
+    const pads = CCC.merge(CCC.data.pads, 'pads');
+    document.getElementById('padList').innerHTML = pads.map(p => `
+      <div class="flex items-center justify-between p-3 rounded-lg border border-[rgba(212,175,55,0.12)]">
+        <div>
+          <div class="text-sm font-semibold">${p.location}</div>
+          <div class="text-xs text-slate-500">${p.id || 'PAD-NEW'}</div>
+        </div>
+        <span class="text-[10px] font-bold px-2.5 py-1 rounded-full ${statusPillClass[p.status]}">${p.status}</span>
+      </div>
+    `).join('');
+    pads.forEach(p => {
+      L.marker([p.lat, p.lng], { icon: pinIcon(statusColor[p.status], 14) }).addTo(map).bindPopup(
+        `<div class="font-display font-bold text-sm mb-1">${p.location}</div><div class="text-xs text-slate-300">Status: ${p.status}</div>`
+      );
+    });
+  }
+  renderPads();
+
+  CCC.data.depots.forEach(d => {
+    L.marker([d.lat, d.lng], { icon: pinIcon('#A78BFA', 18) }).addTo(map).bindPopup(
+      `<div class="text-[10px] uppercase tracking-wider mb-1" style="color:#A78BFA;">Depot</div><div class="font-display font-bold text-sm mb-1">${d.name}</div><div class="text-xs text-slate-300">Capacity: ${d.currentLoad}/${d.capacity}</div>`
+    );
+  });
+
+  CCC.data.deadZones.forEach(z => {
+    L.circle([z.lat, z.lng], { radius: z.radius, color: '#E82127', weight: 1, fillColor: '#E82127', fillOpacity: 0.15 })
+      .addTo(map).bindPopup(`<div class="text-xs font-semibold text-crimson">${z.label}</div>`);
+  });
+
+  // Depot radar bars
+  document.getElementById('depotList').innerHTML = CCC.data.depots.map(d => {
+    const pct = Math.round((d.currentLoad / d.capacity) * 100);
+    return `
+      <div>
+        <div class="flex justify-between text-sm mb-2">
+          <span class="font-semibold">${d.name}</span>
+          <span class="text-slate-400">${d.currentLoad}/${d.capacity}</span>
+        </div>
+        <div class="h-3 w-full rounded-full overflow-hidden bg-[#161b26]">
+          <div class="h-full rounded-full bg-gradient-to-r from-cyan to-cyblue transition-all duration-1000 ease-out" style="width:0%" data-target="${pct}"></div>
+        </div>
+      </div>`;
+  }).join('');
+  requestAnimationFrame(() => {
+    document.querySelectorAll('#depotList [data-target]').forEach(bar => {
+      bar.style.width = bar.dataset.target + '%';
+    });
+  });
+
+  // Register pad modal
+  const padModal = document.getElementById('padModal');
+  document.getElementById('registerPadBtn').addEventListener('click', () => padModal.classList.add('is-open'));
+  document.getElementById('padModalClose').addEventListener('click', () => padModal.classList.remove('is-open'));
+  padModal.addEventListener('click', (e) => { if (e.target === padModal) padModal.classList.remove('is-open'); });
+
+  document.getElementById('padPhoto').addEventListener('change', (e) => {
+    const file = e.target.files[0];
+    const preview = document.getElementById('padPhotoPreview');
+    if (!file) { preview.classList.add('hidden'); return; }
+    const reader = new FileReader();
+    reader.onload = (ev) => { preview.src = ev.target.result; preview.classList.remove('hidden'); };
+    reader.readAsDataURL(file);
+  });
+
+  document.getElementById('padForm').addEventListener('submit', (e) => {
+    e.preventDefault();
+    const location = document.getElementById('padLocation').value.trim();
+    const status = document.getElementById('padStatus').value;
+    if (!location) return;
+    const stored = CCC.storage.get('pads', []);
+    const center = map.getCenter();
+    stored.push({ location, status, lat: center.lat + (Math.random()-0.5)*0.05, lng: center.lng + (Math.random()-0.5)*0.05 });
+    CCC.storage.set('pads', stored);
+    padModal.classList.remove('is-open');
+    e.target.reset();
+    document.getElementById('padPhotoPreview').classList.add('hidden');
+    renderPads();
+    CCC.toast('Inductive pad registered.', 'success');
+  });
+</script>
+</body>
+</html>

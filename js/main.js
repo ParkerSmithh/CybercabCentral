@@ -1,0 +1,291 @@
+/* Cybercab Central — shared runtime: seed data, storage, nav, Tesla-link,
+   scroll reveal, counters, confetti, toasts. Loaded after js/calc.js on
+   every page; each page's own inline <script> calls CCC.init() first. */
+
+const CCC = (() => {
+  const NS = 'cybercabCentral.';
+
+  /* ---------------- Seed data ---------------- */
+  const data = {
+    cybercabs: [
+      { id: 'CC-0412', lat: 30.2672, lng: -97.7431, battery: 82, status: 'Unsupervised', lastSeen: '2m ago' },
+      { id: 'CC-0388', lat: 30.2849, lng: -97.7341, battery: 61, status: 'Unsupervised', lastSeen: '4m ago' },
+      { id: 'CC-0455', lat: 30.2489, lng: -97.7622, battery: 94, status: 'Unsupervised', lastSeen: '6m ago' },
+      { id: 'CC-0201', lat: 30.2711, lng: -97.7091, battery: 47, status: 'Charging', lastSeen: '1m ago' },
+      { id: 'CC-0509', lat: 30.3005, lng: -97.7550, battery: 73, status: 'Unsupervised', lastSeen: '9m ago' }
+    ],
+    modelYs: [
+      { id: 'MY-1187', lat: 32.7831, lng: -96.7994, battery: 58, status: 'Employee Test', lastSeen: '3m ago' },
+      { id: 'MY-1042', lat: 32.7963, lng: -96.7691, battery: 88, status: 'Employee Test', lastSeen: '5m ago' },
+      { id: 'MY-1299', lat: 30.2601, lng: -97.7519, battery: 65, status: 'Unsupervised', lastSeen: '2m ago' }
+    ],
+    pads: [
+      { id: 'PAD-A1', lat: 30.2655, lng: -97.7500, status: 'Operational', location: 'S Congress Depot' },
+      { id: 'PAD-A2', lat: 30.2790, lng: -97.7280, status: 'Obstructed', location: 'Rainey St Curb' },
+      { id: 'PAD-A3', lat: 30.2450, lng: -97.7700, status: 'Under Construction', location: 'Slaughter Ln Lot' },
+      { id: 'PAD-D1', lat: 32.7900, lng: -96.7850, status: 'Operational', location: 'Deep Ellum Yard' }
+    ],
+    depots: [
+      { id: 'DEPOT-AUS', name: 'Austin Central Depot', lat: 30.2200, lng: -97.7500, capacity: 120, currentLoad: 94 },
+      { id: 'DEPOT-DAL', name: 'Dallas Turnaround', lat: 32.7500, lng: -96.8200, capacity: 60, currentLoad: 22 }
+    ],
+    deadZones: [
+      { lat: 30.2950, lng: -97.7150, radius: 900, label: 'East Austin high-demand gap' },
+      { lat: 32.8100, lng: -96.7500, radius: 800, label: 'North Dallas gap' }
+    ],
+    sightings: [
+      { id: 's1', vehicle: 'CC-0412', loc: 'S Congress Ave, Austin, TX', time: 'Just now', type: 'Unsupervised', verified: true },
+      { id: 's2', vehicle: 'MY-1187', loc: 'Uptown, Dallas, TX', time: '2m ago', type: 'Employee Test', verified: true },
+      { id: 's3', vehicle: 'CC-0455', loc: 'Rainey St, Austin, TX', time: '5m ago', type: 'Unsupervised', verified: true },
+      { id: 's4', vehicle: 'MY-1042', loc: 'Deep Ellum, Dallas, TX', time: '12m ago', type: 'Employee Test', verified: false }
+    ],
+    bounties: [
+      { id: 'b1', title: 'First sighting in Zilker', reward: 250, progress: 3, goal: 5 },
+      { id: 'b2', title: 'Night-time unsupervised clip', reward: 400, progress: 1, goal: 3 },
+      { id: 'b3', title: 'Inductive pad in-use photo', reward: 150, progress: 4, goal: 4 }
+    ],
+    leaderboard: [
+      { name: 'atx_spotter', score: 1820 },
+      { name: 'dfw_watcher', score: 1390 },
+      { name: 'cabhunter22', score: 1204 },
+      { name: 'sillicon_hills', score: 990 },
+      { name: 'railyardryan', score: 812 }
+    ],
+    cities: [
+      { name: 'Austin', state: 'TX', votes: 412 },
+      { name: 'Miami', state: 'FL', votes: 356 },
+      { name: 'Las Vegas', state: 'NV', votes: 298 },
+      { name: 'Dallas', state: 'TX', votes: 271 }
+    ],
+    bingoTiles: [
+      'Spot 2 Cybercabs same block', 'Catch a wireless charging stop', 'See an empty Cybercab u-turn',
+      'Spot a Model Y safety driver', 'Photograph a depot at night', 'Cybercab yields to pedestrian',
+      'Spot 3 sightings in one day', 'See a Cybercab at a drive-thru', 'Catch a rainy-day ride'
+    ]
+  };
+
+  /* ---------------- Storage ---------------- */
+  const storage = {
+    get(key, fallback) {
+      try {
+        const raw = localStorage.getItem(NS + key);
+        return raw ? JSON.parse(raw) : fallback;
+      } catch (e) { return fallback; }
+    },
+    set(key, value) {
+      try { localStorage.setItem(NS + key, JSON.stringify(value)); } catch (e) {}
+    }
+  };
+
+  function merge(seedArray, storageKey) {
+    return seedArray.concat(storage.get(storageKey, []));
+  }
+
+  /* ---------------- Nav ---------------- */
+  function initNav() {
+    const links = document.querySelectorAll('[data-nav]');
+    const indicator = document.getElementById('navIndicator');
+    let path = location.pathname.split('/').pop() || 'index.html';
+    path = path.replace('.html', '') || 'index';
+
+    let activeLink = null;
+    links.forEach(link => {
+      if (link.dataset.nav === path) {
+        link.classList.add('text-gold');
+        activeLink = link;
+      } else {
+        link.classList.remove('text-gold');
+      }
+    });
+
+    if (activeLink && indicator) {
+      const navRect = indicator.parentElement.getBoundingClientRect();
+      const linkRect = activeLink.getBoundingClientRect();
+      indicator.style.left = (linkRect.left - navRect.left) + 'px';
+      indicator.style.width = linkRect.width + 'px';
+      indicator.classList.add('is-active');
+    }
+  }
+
+  /* ---------------- Tesla link ---------------- */
+  function isTeslaLinked() {
+    return storage.get('teslaLinked', false) === true;
+  }
+
+  function renderTeslaButton() {
+    const btn = document.getElementById('teslaLinkBtn');
+    if (!btn) return;
+    if (isTeslaLinked()) {
+      btn.innerHTML = '<svg class="w-4 h-4" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M20 6L9 17l-5-5"/></svg> Verified Fleet Scout';
+      btn.classList.remove('btn-magnetic');
+      btn.classList.add('bg-gradient-to-r', 'from-gold', 'to-goldsoft', 'text-[#1a1204]', 'cursor-default');
+      btn.onclick = (e) => e.preventDefault();
+    }
+  }
+
+  function initTeslaLink() {
+    const btn = document.getElementById('teslaLinkBtn');
+    const modal = document.getElementById('teslaLinkModal');
+    const confirmBtn = document.getElementById('teslaLinkConfirm');
+    const cancelBtn = document.getElementById('teslaLinkCancel');
+    if (!btn || !modal) return;
+
+    btn.addEventListener('click', () => {
+      if (isTeslaLinked()) return;
+      modal.classList.add('is-open');
+    });
+    if (cancelBtn) cancelBtn.addEventListener('click', () => modal.classList.remove('is-open'));
+    modal.addEventListener('click', (e) => { if (e.target === modal) modal.classList.remove('is-open'); });
+
+    if (confirmBtn) {
+      confirmBtn.addEventListener('click', () => {
+        storage.set('teslaLinked', true);
+        modal.classList.remove('is-open');
+        spawnConfetti(btn);
+        renderTeslaButton();
+        toast('Tesla account linked — you are now a Verified Fleet Scout.', 'success');
+      });
+    }
+  }
+
+  /* ---------------- Reveal on scroll ---------------- */
+  function initReveal() {
+    const els = document.querySelectorAll('.reveal-on-scroll');
+    if (!els.length) return;
+    const io = new IntersectionObserver((entries) => {
+      entries.forEach(entry => {
+        if (entry.isIntersecting) {
+          const delay = entry.target.dataset.delay || 0;
+          entry.target.style.transitionDelay = delay + 'ms';
+          entry.target.classList.add('is-visible');
+          io.unobserve(entry.target);
+        }
+      });
+    }, { threshold: 0.15, rootMargin: '0px 0px -60px 0px' });
+    els.forEach(el => io.observe(el));
+  }
+
+  /* ---------------- Counter animation ---------------- */
+  function animateCounter(el, from, to, duration = 1200, formatFn) {
+    if (!el) return;
+    const start = performance.now();
+    const fmt = formatFn || (v => Math.round(v).toLocaleString());
+    function easeOutExpo(t) { return t === 1 ? 1 : 1 - Math.pow(2, -10 * t); }
+    function tick(now) {
+      const t = Math.min(1, (now - start) / duration);
+      const eased = easeOutExpo(t);
+      el.textContent = fmt(from + (to - from) * eased);
+      if (t < 1) requestAnimationFrame(tick);
+      else el.textContent = fmt(to);
+    }
+    requestAnimationFrame(tick);
+  }
+
+  /* ---------------- Confetti ---------------- */
+  function spawnConfetti(originEl) {
+    const colors = ['#D4AF37', '#F3E5AB', '#00E5FF', '#CBD5E1'];
+    const rect = originEl ? originEl.getBoundingClientRect() : { left: window.innerWidth / 2, top: window.innerHeight / 2, width: 0, height: 0 };
+    const originX = rect.left + rect.width / 2;
+    const originY = rect.top + rect.height / 2;
+    for (let i = 0; i < 28; i++) {
+      const piece = document.createElement('div');
+      piece.className = 'confetti-piece';
+      piece.style.left = originX + 'px';
+      piece.style.top = originY + 'px';
+      piece.style.background = colors[i % colors.length];
+      const dx = (Math.random() - 0.5) * 360;
+      const dy = (Math.random() * -260) - 40;
+      const rot = (Math.random() - 0.5) * 720;
+      piece.style.setProperty('--dx', dx + 'px');
+      piece.style.setProperty('--dy', dy + 'px');
+      piece.style.setProperty('--rot', rot + 'deg');
+      document.body.appendChild(piece);
+      setTimeout(() => piece.remove(), 1700);
+    }
+  }
+
+  /* ---------------- Toast ---------------- */
+  function toast(message, type = 'info') {
+    let root = document.getElementById('toastRoot');
+    if (!root) {
+      root = document.createElement('div');
+      root.id = 'toastRoot';
+      root.className = 'fixed bottom-6 right-6 z-[200] flex flex-col gap-2';
+      document.body.appendChild(root);
+    }
+    const colors = { success: 'border-gold text-gold', info: 'border-cyan text-cyan', error: 'border-crimson text-crimson' };
+    const el = document.createElement('div');
+    el.className = 'toast glass px-4 py-3 rounded-xl text-sm font-medium border ' + (colors[type] || colors.info);
+    el.textContent = message;
+    root.appendChild(el);
+    requestAnimationFrame(() => el.classList.add('is-visible'));
+    setTimeout(() => {
+      el.classList.remove('is-visible');
+      setTimeout(() => el.remove(), 350);
+    }, 3200);
+  }
+
+  /* ---------------- Sighting drawer (shared across pages) ---------------- */
+  function initSightingDrawer() {
+    const drawer = document.getElementById('sightingDrawer');
+    const backdrop = document.getElementById('sightingBackdrop');
+    const form = document.getElementById('sightingForm');
+    if (!drawer || !backdrop || !form) return;
+
+    const openBtns = [document.getElementById('openSightingDrawer'), document.getElementById('heroSightingBtn')].filter(Boolean);
+    const closeBtn = document.getElementById('closeSightingDrawer');
+
+    function open() { drawer.classList.add('is-open'); backdrop.classList.add('is-open'); }
+    function close() { drawer.classList.remove('is-open'); backdrop.classList.remove('is-open'); }
+
+    openBtns.forEach(btn => btn.addEventListener('click', open));
+    if (closeBtn) closeBtn.addEventListener('click', close);
+    backdrop.addEventListener('click', close);
+
+    form.addEventListener('submit', (e) => {
+      e.preventDefault();
+      const type = document.getElementById('sightingType').value;
+      const loc = document.getElementById('sightingLoc').value.trim();
+      const vehicle = document.getElementById('sightingVehicle').value.trim() || 'Unlisted';
+      if (!loc) return;
+      const entry = { id: 'u' + Date.now(), vehicle, loc, time: 'Just now', type, verified: false };
+      const stored = storage.get('sightings', []);
+      stored.unshift(entry);
+      storage.set('sightings', stored);
+      close();
+      form.reset();
+      toast('Sighting logged — thanks for the intel.', 'success');
+      document.dispatchEvent(new CustomEvent('ccc:sighting-added', { detail: entry }));
+    });
+  }
+
+  /* ---------------- Ambient particles ---------------- */
+  function initParticles() {
+    const mesh = document.querySelector('.bg-mesh');
+    if (!mesh) return;
+    for (let i = 0; i < 14; i++) {
+      const p = document.createElement('div');
+      p.className = 'particle';
+      const size = 2 + Math.random() * 4;
+      p.style.width = size + 'px';
+      p.style.height = size + 'px';
+      p.style.left = Math.random() * 100 + '%';
+      p.style.bottom = '-20px';
+      p.style.animationDuration = (14 + Math.random() * 14) + 's';
+      p.style.animationDelay = (Math.random() * 14) + 's';
+      mesh.appendChild(p);
+    }
+  }
+
+  /* ---------------- Init ---------------- */
+  function init() {
+    initNav();
+    renderTeslaButton();
+    initTeslaLink();
+    initReveal();
+    initParticles();
+    initSightingDrawer();
+  }
+
+  return { data, storage, merge, initNav, initTeslaLink, renderTeslaButton, initReveal, animateCounter, spawnConfetti, toast, initParticles, initSightingDrawer, init };
+})();
